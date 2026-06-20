@@ -6,11 +6,13 @@ import { ALL_STAGES, C, R, S, stageMeta } from '../theme';
 import { newId, Partner, PipelineStage } from '../types';
 import { TextField } from './ui';
 
-export function AddPartnerModal({ visible, onClose, existing, onSaved }: {
+export function AddPartnerModal({ visible, onClose, existing, onSaved, onDismiss }: {
   visible: boolean;
   onClose: () => void;
   existing?: Partner;
   onSaved?: (p: Partner) => void;
+  /** Fires after the sheet has fully dismissed — used to safely chain a parent dismissal. */
+  onDismiss?: () => void;
 }) {
   const { addPartner, updatePartner } = useStore();
   const [name, setName] = useState(existing?.name ?? '');
@@ -40,7 +42,7 @@ export function AddPartnerModal({ visible, onClose, existing, onSaved }: {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={styles.modal}>
         <View style={styles.bar}>
           <Pressable onPress={onClose} hitSlop={8}><Text style={styles.cancel}>Cancel</Text></Pressable>

@@ -291,6 +291,7 @@ function NoticeView({ message, onAnother, onView }: { message: string; onAnother
 function PartnerPicker({ visible, selectedId, onClose, onSelect }: { visible: boolean; selectedId?: string; onClose: () => void; onSelect: (id: string) => void }) {
   const { data } = useStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const list = useMemo(() => [...data.partners].sort((a, b) => displayTitle(a).localeCompare(displayTitle(b))), [data.partners]);
 
   return (
@@ -313,7 +314,12 @@ function PartnerPicker({ visible, selectedId, onClose, onSelect }: { visible: bo
             </Pressable>
           ))}
         </ScrollView>
-        <AddPartnerModal visible={showAdd} onClose={() => setShowAdd(false)} onSaved={(p) => { setShowAdd(false); onSelect(p.id); }} />
+        <AddPartnerModal
+          visible={showAdd}
+          onClose={() => setShowAdd(false)}
+          onSaved={(p) => { setPendingId(p.id); setShowAdd(false); }}
+          onDismiss={() => { if (pendingId) { const id = pendingId; setPendingId(null); onSelect(id); } }}
+        />
       </View>
     </Modal>
   );
