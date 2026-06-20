@@ -12,7 +12,7 @@ import { isSupabaseConfigured } from './supabase';
 import * as sync from './sync';
 import {
   AgentRole, AppData, ChatMessage, ClaudeModelId, CompanyProfile, Interaction, KnowledgeDoc,
-  Partner, Reminder, Settings, defaultSettings, newId,
+  Partner, Reminder, SalonFinance, Settings, defaultSettings, newId,
 } from './types';
 import { nowISO } from './format';
 
@@ -58,6 +58,8 @@ interface StoreValue {
   removeKnowledge: (id: string) => void;
   openOriginal: (doc: KnowledgeDoc) => Promise<string>;
 
+  importFinances: (period: string, records: SalonFinance[]) => void;
+
   saveApiKey: (key: string) => Promise<void>;
   removeApiKey: () => Promise<void>;
 
@@ -68,9 +70,9 @@ interface StoreValue {
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-const EMPTY_DATA: AppData = { partners: [], interactions: [], reminders: [], chat: [] };
+const EMPTY_DATA: AppData = { partners: [], interactions: [], reminders: [], chat: [], finances: [] };
 type EntityHashes = Record<sync.EntityTable, Record<string, string>>;
-const emptyHashes = (): EntityHashes => ({ partners: {}, interactions: {}, reminders: {}, knowledge: {} });
+const emptyHashes = (): EntityHashes => ({ partners: {}, interactions: {}, reminders: {}, knowledge: {}, finances: {} });
 
 function upsertById<T extends { id: string }>(arr: T[], obj: T): T[] {
   return arr.some((x) => x.id === obj.id) ? arr.map((x) => (x.id === obj.id ? obj : x)) : [obj, ...arr];
@@ -163,7 +165,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSyncStatus('connecting');
     const remote = await sync.pullAll();
     // The cloud is the source of truth for the shared workspace.
-    setData((d) => ({ ...d, partners: remote.partners, interactions: remote.interactions, reminders: remote.reminders }));
+    setData((d) => ({ ...d, partners: remote.partners, interactions: remote.interactions, reminders: remote.reminders, finances: remote.finances }));
     setSettings((s) => ({ ...s, knowledge: remote.knowledge, ...(remote.company ? { company: remote.company } : {}) }));
 
     const hashes = emptyHashes();
@@ -172,6 +174,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     seed('interactions', remote.interactions);
     seed('reminders', remote.reminders);
     seed('knowledge', remote.knowledge);
+    seed('finances', remote.finances);
     pushedRef.current = hashes;
 
     if (remote.company) {
@@ -205,7 +208,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   async function flushPush(d: AppData, s: Settings) {
     const collections: Record<sync.EntityTable, { id: string }[]> = {
-      partners: d.partners, interactions: d.interactions, reminders: d.reminders, knowledge: s.knowledge,
+      partners: d.partners, interactions: d.interactions, reminders: d.reminders, knowledge: s.knowledge, finances: d.finances,
     };
     try {
       setSyncStatus('syncing');
@@ -316,6 +319,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [session]);
   const removeKnowledge = useCallback((id: string) => setSettings((s) => ({ ...s, knowledge: s.knowledge.filter((k) => k.id !== id) })), []);
+  // Replace a whole month's salon financials in one shot (re-import overwrites that period).
+  const importFinances = useCallback((period: string, records: SalonFinance[]) => setData((d) => ({
+    ...d,
+    finances: [...records.map(withAuthor), ...d.finances.filter((f) => f.period !== period)],
+  })), [withAuthor]);
   const openOriginal = useCallback((doc: KnowledgeDoc) => {
     if (!doc.filePath) throw new Error('No original file for this note.');
     return sync.signedUrl(doc.filePath);
@@ -345,7 +353,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [settings]);
 
   const exportJSON = useCallback(() => JSON.stringify(data, null, 2), [data]);
-  const resetAll = useCallback(() => setData((d) => ({ ...EMPTY_DATA, chat: d.chat })), []);
+  const resetAll = useCallback(() => setData((d) => ({ ...EMPTY_DATA, chat: d.chat, finances: d.finances })), []);
 
   const value: StoreValue = {
     ready, data, settings, hasApiKey,
@@ -356,6 +364,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addReminder, addReminders, toggleReminder, deleteReminder, replaceAutoReminders,
     addChat, clearChat,
     patchSettings, updateCompany, setModel, applyPreset, addKnowledge, addKnowledgeFile, removeKnowledge, openOriginal,
+    importFinances,
     saveApiKey, removeApiKey,
     agentConfig, exportJSON, resetAll,
   };

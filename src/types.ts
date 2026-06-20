@@ -112,6 +112,25 @@ export interface KnowledgeDoc {
   mimeType?: string;
 }
 
+/** One salon's monthly financials (from the imported profit breakdown). */
+export interface SalonFinance {
+  id: string;             // `${period}::${normalizedSalon}` — stable so re-imports update in place
+  period: string;         // 'YYYY-MM'
+  salon: string;
+  bookings: number;
+  paidValue: number;      // what customers paid through Scuts
+  actualBillValue: number;
+  inventoryCost: number;
+  margin: number;
+  pgCharges: number;
+  profitBeforeTax: number;
+  gst: number;
+  tcs: number;
+  netProfit: number;
+  addedBy?: string;
+  createdAt: string;
+}
+
 export interface CompanyProfile {
   name: string;
   tagline: string;
@@ -138,6 +157,7 @@ export interface AppData {
   interactions: Interaction[];
   reminders: Reminder[];
   chat: ChatMessage[];
+  finances: SalonFinance[];
 }
 
 export const AGENT_ROLES: AgentRole[] = ['summarizer', 'sentiment', 'strategist', 'followUp', 'insight', 'chat'];

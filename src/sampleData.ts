@@ -115,5 +115,5 @@ export function makeSeed(): AppData {
   // A manual focus point
   reminders.push({ id: newId(), partnerName: '', title: 'Draft a one-page Scuts value sheet', detail: 'A leave-behind that explains transparency, reviews and pricing in 60 seconds.', dueDate: d(0), priority: 'medium', type: 'nudge', isDone: false, isAuto: false, createdAt: nowISO() });
 
-  return { partners, interactions, reminders, chat: [] };
+  return { partners, interactions, reminders, chat: [], finances: [] };
 }

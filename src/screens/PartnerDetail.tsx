@@ -7,13 +7,14 @@ import { InterestRing, Sparkline } from '../components/Gauges';
 import { ReminderRow } from '../components/ReminderRow';
 import { Avatar, Card, MomentumBadge, Pill, PrimaryButton, SectionHeader, StageBadge, TextField } from '../components/ui';
 import { errorMessage } from '../claude';
+import { inr, matchPartner, monthLabel } from '../finance';
 import { dayTime, isOverdue, nowISO, relative, shortDate } from '../format';
 import { useNav } from '../nav';
 import { displayTitle, initials, interactionsFor, remindersFor } from '../select';
 import { buildStrategy, makeReminders, planFollowUp } from '../semanticLayer';
 import { useStore } from '../store';
 import { C, S } from '../theme';
-import { Interaction, Reminder, newId } from '../types';
+import { Interaction, Reminder, SalonFinance, newId } from '../types';
 
 const CARD_W = Dimensions.get('window').width - S.screen * 2 - 36;
 
@@ -128,6 +129,9 @@ export default function PartnerDetail({ partnerId }: { partnerId: string }) {
           {partner.phone ? <ContactBtn icon="logo-whatsapp" label="WhatsApp" url={`https://wa.me/${digits(partner.phone)}`} /> : null}
           {partner.email ? <ContactBtn icon="mail" label="Email" url={`mailto:${partner.email}`} /> : null}
         </View>
+
+        {/* Profitability (from imported business financials) */}
+        <ProfitabilityCard partnerFinances={data.finances.filter((f) => !!matchPartner(f.salon, [partner]))} />
 
         {/* Sentiment */}
         {s ? (
@@ -260,6 +264,32 @@ function Tile({ icon, value, label }: { icon: string; value: string; label: stri
       <Text style={{ fontSize: 14, fontWeight: '700', color: C.text, marginTop: 4 }} numberOfLines={1}>{value}</Text>
       <Text style={{ fontSize: 11, color: C.textDim }}>{label}</Text>
     </View>
+  );
+}
+
+function ProfitabilityCard({ partnerFinances }: { partnerFinances: SalonFinance[] }) {
+  if (!partnerFinances.length) return null;
+  const fin = [...partnerFinances].sort((a, b) => a.period.localeCompare(b.period));
+  const latest = fin[fin.length - 1];
+  return (
+    <Card>
+      <SectionHeader title="Profitability" subtitle={monthLabel(latest.period)} />
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+        <Tile icon="cash" value={inr(latest.netProfit)} label="Net profit" />
+        <Tile icon="card" value={inr(latest.paidValue)} label="Revenue" />
+        <Tile icon="calendar" value={String(Math.round(latest.bookings))} label="Bookings" />
+      </View>
+      {fin.length > 1 ? (
+        <View style={{ marginTop: 12, gap: 7 }}>
+          {[...fin].reverse().map((f) => (
+            <View key={f.id} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, color: C.textDim }}>{monthLabel(f.period)}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: f.netProfit < 0 ? C.negative : C.positive }}>{inr(f.netProfit)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </Card>
   );
 }
 

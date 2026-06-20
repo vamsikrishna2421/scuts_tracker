@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavProvider, TabKey, useNav } from './src/nav';
 import Auth from './src/screens/Auth';
+import Business from './src/screens/Business';
 import Chat from './src/screens/Chat';
 import Dashboard from './src/screens/Dashboard';
 import LogInteraction from './src/screens/LogInteraction';
@@ -65,6 +66,7 @@ function Shell() {
         {tab === 'partners' && <Partners />}
         {tab === 'log' && <LogInteraction />}
         {tab === 'assistant' && <Chat />}
+        {tab === 'business' && <Business />}
         {tab === 'settings' && <Settings />}
       </View>
       <TabBar />
@@ -83,6 +85,7 @@ const TABS: { key: TabKey; icon: string; label: string }[] = [
   { key: 'partners', icon: 'people', label: 'Partners' },
   { key: 'log', icon: 'mic-circle', label: 'Log' },
   { key: 'assistant', icon: 'sparkles', label: 'Assistant' },
+  { key: 'business', icon: 'stats-chart', label: 'Business' },
   { key: 'settings', icon: 'settings', label: 'Settings' },
 ];
 

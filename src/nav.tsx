@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 
-export type TabKey = 'today' | 'partners' | 'log' | 'assistant' | 'settings';
+export type TabKey = 'today' | 'partners' | 'log' | 'assistant' | 'business' | 'settings';
 
 export type Overlay =
   | { kind: 'partnerDetail'; partnerId: string }

@@ -1,11 +1,11 @@
 import type { Session } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
-import type { CompanyProfile, Interaction, KnowledgeDoc, Partner, Reminder } from './types';
+import type { CompanyProfile, Interaction, KnowledgeDoc, Partner, Reminder, SalonFinance } from './types';
 
 export type SyncStatus = 'off' | 'connecting' | 'syncing' | 'synced' | 'error';
-export type EntityTable = 'partners' | 'interactions' | 'reminders' | 'knowledge';
-export const ENTITY_TABLES: EntityTable[] = ['partners', 'interactions', 'reminders', 'knowledge'];
+export type EntityTable = 'partners' | 'interactions' | 'reminders' | 'knowledge' | 'finances';
+export const ENTITY_TABLES: EntityTable[] = ['partners', 'interactions', 'reminders', 'knowledge', 'finances'];
 
 /** A row as it lives in Supabase: the full object lives in `data`, plus tombstone metadata. */
 export interface Row {
@@ -19,6 +19,7 @@ export interface PulledWorkspace {
   interactions: Interaction[];
   reminders: Reminder[];
   knowledge: KnowledgeDoc[];
+  finances: SalonFinance[];
   company: CompanyProfile | null;
 }
 
@@ -62,14 +63,15 @@ export function setRealtimeAuth(token: string): void {
 // ── Pull ────────────────────────────────────────────────────────────────────--
 export async function pullAll(): Promise<PulledWorkspace> {
   const c = client();
-  const [p, i, r, k, w] = await Promise.all([
+  const [p, i, r, k, f, w] = await Promise.all([
     c.from('partners').select('id,data,deleted'),
     c.from('interactions').select('id,data,deleted'),
     c.from('reminders').select('id,data,deleted'),
     c.from('knowledge').select('id,data,deleted'),
+    c.from('finances').select('id,data,deleted'),
     c.from('workspace').select('company').eq('id', 'default').maybeSingle(),
   ]);
-  const err = p.error || i.error || r.error || k.error || w.error;
+  const err = p.error || i.error || r.error || k.error || f.error || w.error;
   if (err) throw err;
   const live = <T,>(rows: Row[] | null): T[] => (rows ?? []).filter((x) => !x.deleted).map((x) => x.data as T);
   return {
@@ -77,6 +79,7 @@ export async function pullAll(): Promise<PulledWorkspace> {
     interactions: live<Interaction>(i.data as Row[]),
     reminders: live<Reminder>(r.data as Row[]),
     knowledge: live<KnowledgeDoc>(k.data as Row[]),
+    finances: live<SalonFinance>(f.data as Row[]),
     company: (w.data?.company as CompanyProfile) ?? null,
   };
 }

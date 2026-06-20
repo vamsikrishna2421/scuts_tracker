@@ -144,6 +144,14 @@ ${cfg.knowledge}`;
   return complete({ apiKey: cfg.apiKey, model: pick(cfg, 'insight'), system, messages: [{ role: 'user', content: snapshot }], maxTokens: 600 });
 }
 
+// MARK: Finance brief
+export async function financeBrief(snapshot: string, cfg: AgentConfig): Promise<string> {
+  const system = `You are the finance analyst for Scuts' founders, Abhishek and Pavan Kalyan. You are given a month's per-salon profit breakdown, with the previous month for comparison. Write a sharp, specific business readout: total revenue and net profit and how they moved month-over-month, which salons drive the most profit, which run thin-margin or at a loss and the likely reason, and 2–3 concrete actions to lift profit next month. 5–9 sentences, plain text — no markdown, no headers, no JSON. Use ₹ for money.
+
+${cfg.knowledge}`;
+  return complete({ apiKey: cfg.apiKey, model: pick(cfg, 'insight'), system, messages: [{ role: 'user', content: snapshot }], maxTokens: 800 });
+}
+
 // MARK: Chat
 export async function chatReply(history: ClaudeMessage[], snapshot: string, cfg: AgentConfig): Promise<string> {
   const system = `You are Scuts' in-app assistant for the founders, Abhishek and Pavan Kalyan. You help them grow salon partnerships: strategize, prep for specific conversations, handle objections, and decide what to prioritize. Be practical, specific and concise — give them something they can act on. Use the company knowledge and live pipeline snapshot below. If they ask about a specific salon owner, use what the snapshot says about that person.
