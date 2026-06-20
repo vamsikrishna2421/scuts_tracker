@@ -1,0 +1,16 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+*.moved-aside
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Secrets — never commit an API key
+*.xcconfig.local
+Secrets.plist

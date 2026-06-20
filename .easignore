@@ -1,0 +1,17 @@
+# Kept out of EAS build uploads (not needed to build the Expo app).
+node_modules/
+dist/
+*.log
+
+# The native SwiftUI version is an alternative, not part of the Expo build.
+ScutsTracker/
+
+# Agent tooling
+.claude/
+.claude-flow/
+.mcp.json
+CLAUDE.md
+
+# Local env
+.env.local
+.env*.local

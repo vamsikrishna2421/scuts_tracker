@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Scuts Tracker",
+    "slug": "scuts-tracker",
+    "scheme": "scutstracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F2F3F8",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.scuts.tracker",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Scuts Tracker uses the microphone so you can log updates to salon owners by voice.",
+        "NSSpeechRecognitionUsageDescription": "Scuts Tracker transcribes your voice notes into text so the assistant can summarize them."
+      }
+    },
+    "android": {
+      "package": "com.scuts.tracker",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#5C50DC",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#5C50DC",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 170
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Scuts Tracker uses the microphone so you can dictate updates about salon owners.",
+          "speechRecognitionPermission": "Scuts Tracker turns your voice into private on-device text."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "17.0",
+            "buildSettings": {
+              "ENABLE_USER_SCRIPT_SANDBOXING": "NO"
+            }
+          },
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
+    ]
+  }
+}
