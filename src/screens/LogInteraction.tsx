@@ -131,7 +131,7 @@ export default function LogInteraction({ presetPartnerId, onClose }: { presetPar
       </View>
 
       {proc === null ? (
-        <ScrollView contentContainerStyle={{ padding: S.screen, gap: S.gap }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ padding: S.screen, gap: S.gap }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           {/* Partner */}
           <Pressable onPress={() => setShowPicker(true)}>
             <Card>

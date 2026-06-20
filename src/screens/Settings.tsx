@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import React, { useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiKeyEditor } from '../components/ApiKeyEditor';
-import { Card, PrimaryButton, SectionHeader, TextField } from '../components/ui';
+import { Card, PrimaryButton, SecondaryButton, SectionHeader, TextField } from '../components/ui';
 import { Logo } from './Onboarding';
 import { matchedPreset, PRESETS } from '../presets';
 import { useStore } from '../store';
@@ -191,12 +193,33 @@ function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () =>
   const { settings, addKnowledge, removeKnowledge } = useStore();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [importError, setImportError] = useState('');
 
   const add = () => {
     if (!content.trim()) return;
     addKnowledge(title, content);
     setTitle('');
     setContent('');
+  };
+
+  const attach = async () => {
+    setImportError('');
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+      if (res.canceled) return;
+      const file = res.assets[0];
+      if (!file) return;
+      const lower = (file.name || '').toLowerCase();
+      if (lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx') || (file.mimeType || '').includes('pdf')) {
+        setImportError('PDF / Word import isn’t supported yet — open the file, copy the text, and paste it above.');
+        return;
+      }
+      const text = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.UTF8 });
+      if (!text.trim()) { setImportError('That file looks empty.'); return; }
+      addKnowledge((file.name || 'Uploaded note').replace(/\.[^.]+$/, ''), text);
+    } catch {
+      setImportError('Couldn’t read that file as text. Try a .txt or .md file, or paste the content above.');
+    }
   };
 
   return (
@@ -208,6 +231,8 @@ function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () =>
         <TextField value={title} onChangeText={setTitle} placeholder="Title (e.g. Objection-handling playbook)" />
         <TextField value={content} onChangeText={setContent} placeholder="Paste content…" multiline style={{ minHeight: 110, textAlignVertical: 'top', marginTop: 8 }} />
         <View style={{ marginTop: 10 }}><PrimaryButton title="Add to knowledge" icon="add" onPress={add} disabled={!content.trim()} /></View>
+        <View style={{ marginTop: 8 }}><SecondaryButton title="Attach a text file (.txt, .md, .csv)" icon="document-attach" onPress={attach} /></View>
+        {importError ? <Text style={{ color: C.negative, fontSize: 12.5, marginTop: 6 }}>{importError}</Text> : null}
       </Field>
       {settings.knowledge.length > 0 ? (
         <Field label="Saved">
@@ -235,7 +260,7 @@ function ModalShell({ visible, title, onClose, onSave, children }: { visible: bo
           <Text style={{ fontSize: 16, fontWeight: '800', color: C.text }}>{title}</Text>
           {onSave ? <Pressable onPress={onSave} hitSlop={8}><Text style={{ color: C.indigo, fontWeight: '800', fontSize: 15 }}>Save</Text></Pressable> : <View style={{ width: 40 }} />}
         </View>
-        <ScrollView contentContainerStyle={{ padding: S.screen, gap: 14 }} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+        <ScrollView contentContainerStyle={{ padding: S.screen, gap: 14 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>{children}</ScrollView>
       </View>
     </Modal>
   );

@@ -49,7 +49,7 @@ export function AddPartnerModal({ visible, onClose, existing, onSaved }: {
             <Text style={[styles.save, !name.trim() && { opacity: 0.4 }]}>Save</Text>
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={{ padding: S.screen, gap: 14 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ padding: S.screen, gap: 14 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           <Group label="Salon owner">
             <TextField value={name} onChangeText={setName} placeholder="Owner name" />
             <TextField value={salon} onChangeText={setSalon} placeholder="Salon name" />

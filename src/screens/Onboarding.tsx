@@ -47,7 +47,7 @@ export default function Onboarding() {
           <Text style={styles.stepKicker}>Step 1 of 2</Text>
           <Text style={styles.stepTitle}>Connect Claude</Text>
           <Text style={styles.stepSub}>Scuts Tracker uses your own Claude API key to power its intelligence. Paste it below — you can change it any time in Settings.</Text>
-          <ScrollView style={{ flex: 1, marginTop: 12 }} keyboardShouldPersistTaps="handled">
+          <ScrollView style={{ flex: 1, marginTop: 12 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
             <Card><ApiKeyEditor /></Card>
           </ScrollView>
           <View style={{ gap: 10 }}>

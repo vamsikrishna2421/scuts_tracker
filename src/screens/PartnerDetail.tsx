@@ -92,7 +92,7 @@ export default function PartnerDetail({ partnerId }: { partnerId: string }) {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: S.screen, gap: S.gap, paddingBottom: insets.bottom + 24 }}>
+      <ScrollView contentContainerStyle={{ padding: S.screen, gap: S.gap, paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {/* Header */}
         <Card>
           <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
