@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import * as Updates from 'expo-updates';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavProvider, TabKey, useNav } from './src/nav';
@@ -14,7 +15,26 @@ import Settings from './src/screens/Settings';
 import { StoreProvider, useStore } from './src/store';
 import { C } from './src/theme';
 
+/** On launch, silently check for an OTA (JS) update; if there is one, download it and reload. */
+function useOTAUpdates() {
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+    (async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch {
+        // Offline or update server unreachable — keep running the current bundle.
+      }
+    })();
+  }, []);
+}
+
 export default function App() {
+  useOTAUpdates();
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
