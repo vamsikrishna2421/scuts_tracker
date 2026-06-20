@@ -5,4 +5,4 @@
 //
 // Until these are filled in, the app runs fully local-only (no cloud sync).
 export const SUPABASE_URL = 'https://ybyeoomdjkrrzhcnormk.supabase.co';
-export const SUPABASE_ANON_KEY = '';
+export const SUPABASE_ANON_KEY = 'sb_publishable_OhtTqfyFC_wd3KNkDc7VKQ_3h7TA0wc';
