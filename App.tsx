@@ -4,6 +4,7 @@ import * as Updates from 'expo-updates';
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import './src/supabase';
 import { NavProvider, TabKey, useNav } from './src/nav';
 import Chat from './src/screens/Chat';
 import Dashboard from './src/screens/Dashboard';
