@@ -14,8 +14,8 @@
       "buildNumber": "1.0.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "Scuts Tracker uses the microphone so you can log updates to salon owners by voice.",
-        "NSSpeechRecognitionUsageDescription": "Scuts Tracker transcribes your voice notes into text so the assistant can summarize them."
+        "NSMicrophoneUsageDescription": "Scuts Tracker uses the microphone so you can dictate updates about salon owners.",
+        "NSSpeechRecognitionUsageDescription": "Scuts Tracker turns your voice into private on-device text."
       }
     },
     "android": {
@@ -64,6 +64,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2f7538cf-778c-4121-80b4-314c2f41e79b"
+      }
+    },
+    "owner": "lekkala2421"
   }
 }
