@@ -3,7 +3,7 @@ const ANTHROPIC_VERSION = '2023-06-01';
 
 export interface ClaudeMessage {
   role: 'user' | 'assistant';
-  content: string;
+  content: string | unknown[];
 }
 
 export class ClaudeError extends Error {
@@ -89,4 +89,28 @@ export function errorMessage(e: unknown): string {
   if (e instanceof ClaudeError) return e.message;
   if (e instanceof Error) return e.message;
   return 'Something went wrong.';
+}
+
+/** Uses Claude's native PDF / vision support to pull text out of a document or image. */
+export async function extractText(opts: {
+  apiKey: string;
+  model: string;
+  kind: 'pdf' | 'image';
+  mediaType: string;
+  base64: string;
+}): Promise<string> {
+  const block =
+    opts.kind === 'pdf'
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: opts.base64 } }
+      : { type: 'image', source: { type: 'base64', media_type: opts.mediaType, data: opts.base64 } };
+  const instruction =
+    opts.kind === 'pdf'
+      ? 'Extract ALL readable text from this document. Return only the extracted content as clean plain text, preserving headings and structure where possible. No commentary.'
+      : 'Extract ALL readable text from this image. If there is little or no text, briefly describe what it shows and any business-relevant details. Return only the content, no commentary.';
+  return complete({
+    apiKey: opts.apiKey,
+    model: opts.model,
+    messages: [{ role: 'user', content: [block, { type: 'text', text: instruction }] }],
+    maxTokens: 6000,
+  });
 }

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import React, { useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { errorMessage } from '../claude';
+import { pickAndExtract } from '../docimport';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiKeyEditor } from '../components/ApiKeyEditor';
 import { Card, PrimaryButton, SecondaryButton, SectionHeader, TextField } from '../components/ui';
@@ -190,10 +190,11 @@ function CompanyModal({ visible, onClose }: { visible: boolean; onClose: () => v
 
 // MARK: Knowledge modal
 function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { settings, addKnowledge, removeKnowledge } = useStore();
+  const { settings, addKnowledge, removeKnowledge, agentConfig } = useStore();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [importError, setImportError] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const add = () => {
     if (!content.trim()) return;
@@ -204,34 +205,35 @@ function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () =>
 
   const attach = async () => {
     setImportError('');
+    setImporting(true);
     try {
-      const res = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-      if (res.canceled) return;
-      const file = res.assets[0];
-      if (!file) return;
-      const lower = (file.name || '').toLowerCase();
-      if (lower.endsWith('.pdf') || lower.endsWith('.doc') || lower.endsWith('.docx') || (file.mimeType || '').includes('pdf')) {
-        setImportError('PDF / Word import isn’t supported yet — open the file, copy the text, and paste it above.');
-        return;
-      }
-      const text = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.UTF8 });
-      if (!text.trim()) { setImportError('That file looks empty.'); return; }
-      addKnowledge((file.name || 'Uploaded note').replace(/\.[^.]+$/, ''), text);
-    } catch {
-      setImportError('Couldn’t read that file as text. Try a .txt or .md file, or paste the content above.');
+      const doc = await pickAndExtract(agentConfig());
+      if (doc) addKnowledge(doc.title, doc.content);
+    } catch (e) {
+      setImportError(errorMessage(e));
+    } finally {
+      setImporting(false);
     }
   };
 
   return (
     <ModalShell visible={visible} title="Knowledge base" onClose={onClose}>
       <Text style={{ fontSize: 13.5, color: C.textDim }}>
-        Paste anything that helps the agents understand Scuts — a pitch script, FAQ, pricing sheet, objection-handling notes, or success stories.
+        Paste text, or attach a file — a pitch script, FAQ, pricing sheet, objection-handling notes, or success stories. PDFs and images are read by Claude.
       </Text>
       <Field label="Add a note">
         <TextField value={title} onChangeText={setTitle} placeholder="Title (e.g. Objection-handling playbook)" />
         <TextField value={content} onChangeText={setContent} placeholder="Paste content…" multiline style={{ minHeight: 110, textAlignVertical: 'top', marginTop: 8 }} />
         <View style={{ marginTop: 10 }}><PrimaryButton title="Add to knowledge" icon="add" onPress={add} disabled={!content.trim()} /></View>
-        <View style={{ marginTop: 8 }}><SecondaryButton title="Attach a text file (.txt, .md, .csv)" icon="document-attach" onPress={attach} /></View>
+        <View style={{ marginTop: 8 }}>
+          <SecondaryButton title={importing ? 'Reading file…' : 'Attach a file (PDF, Word, image, text)'} icon="document-attach" onPress={attach} disabled={importing} />
+        </View>
+        {importing ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <ActivityIndicator size="small" color={C.indigo} />
+            <Text style={{ fontSize: 12.5, color: C.textDim }}>Reading the document with Claude…</Text>
+          </View>
+        ) : null}
         {importError ? <Text style={{ color: C.negative, fontSize: 12.5, marginTop: 6 }}>{importError}</Text> : null}
       </Field>
       {settings.knowledge.length > 0 ? (
