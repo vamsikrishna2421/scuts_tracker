@@ -4,8 +4,8 @@ import * as Updates from 'expo-updates';
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import './src/supabase';
 import { NavProvider, TabKey, useNav } from './src/nav';
+import Auth from './src/screens/Auth';
 import Chat from './src/screens/Chat';
 import Dashboard from './src/screens/Dashboard';
 import LogInteraction from './src/screens/LogInteraction';
@@ -49,8 +49,9 @@ export default function App() {
 }
 
 function Root() {
-  const { ready, settings } = useStore();
-  if (!ready) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
+  const { ready, authReady, cloudEnabled, session, settings } = useStore();
+  if (!ready || (cloudEnabled && !authReady)) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
+  if (cloudEnabled && !session) return <Auth />;
   if (!settings.onboardingComplete) return <Onboarding />;
   return <Shell />;
 }

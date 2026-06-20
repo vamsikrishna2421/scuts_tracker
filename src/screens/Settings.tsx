@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import { errorMessage } from '../claude';
 import { pickAndExtract } from '../docimport';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiKeyEditor } from '../components/ApiKeyEditor';
-import { Card, PrimaryButton, SecondaryButton, SectionHeader, TextField } from '../components/ui';
+import { Card, Pill, PrimaryButton, SecondaryButton, SectionHeader, TextField } from '../components/ui';
 import { Logo } from './Onboarding';
 import { matchedPreset, PRESETS } from '../presets';
 import { useStore } from '../store';
 import { C, MODELS, R, S, agentMeta, modelMeta } from '../theme';
-import { AGENT_ROLES, AgentRole, ClaudeModelId, CompanyProfile, Founder, newId } from '../types';
+import { AGENT_ROLES, AgentRole, ClaudeModelId, CompanyProfile, Founder, KnowledgeDoc, newId } from '../types';
 
 export default function Settings() {
   const store = useStore();
@@ -28,9 +28,34 @@ export default function Settings() {
     ]);
   };
 
+  const onSignOut = () => {
+    Alert.alert('Sign out?', 'Your shared workspace stays safe in the cloud — sign back in any time.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => void store.signOut() },
+    ]);
+  };
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: S.screen, paddingTop: insets.top + 6, gap: S.gap }}>
       <Text style={styles.h1}>Settings</Text>
+
+      {/* Account & sync */}
+      {store.cloudEnabled && store.session ? (
+        <Card>
+          <SectionHeader title="Account" subtitle="Your team shares one live workspace" />
+          <View style={{ height: 12 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[styles.rowIcon, { backgroundColor: C.teal, marginRight: 0 }]}><Ionicons name="person" size={16} color={C.white} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: C.text }}>{store.userName ?? 'Signed in'}</Text>
+              <Text style={{ fontSize: 12.5, color: C.textDim }}>{store.session.user.email}</Text>
+            </View>
+            <SyncBadge status={store.syncStatus} />
+          </View>
+          <View style={{ height: 14 }} />
+          <SecondaryButton title="Sign out" icon="log-out-outline" tint={C.negative} onPress={onSignOut} />
+        </Card>
+      ) : null}
 
       {/* Claude API */}
       <Card>
@@ -103,7 +128,7 @@ export default function Settings() {
       <View style={{ alignItems: 'center', gap: 8, paddingVertical: 16 }}>
         <Logo size={52} />
         <Text style={{ fontSize: 16, fontWeight: '800', color: C.text }}>Scuts Tracker</Text>
-        <Text style={{ fontSize: 12, color: C.textDim }}>Version 1.0.0</Text>
+        <Text style={{ fontSize: 12, color: C.textDim }}>Version 1.1.0</Text>
         <Text style={{ fontSize: 12, color: C.textDim, textAlign: 'center', paddingHorizontal: 24 }}>
           Built for {settings.company.founders.map((f) => f.name).join(' & ') || 'Scuts'} — transparent, better-reviewed, fairly-priced salon experiences.
         </Text>
@@ -141,6 +166,18 @@ function Row({ icon, tint, title, value, onPress, danger }: { icon: string; tint
       <Ionicons name="chevron-forward" size={18} color={C.textFaint} style={{ marginLeft: 6 }} />
     </Pressable>
   );
+}
+
+function SyncBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    synced: { label: 'Synced', color: C.positive },
+    syncing: { label: 'Syncing…', color: C.indigo },
+    connecting: { label: 'Connecting…', color: C.caution },
+    error: { label: 'Offline', color: C.negative },
+    off: { label: 'Local only', color: C.neutral },
+  };
+  const m = map[status] ?? map.off;
+  return <Pill label={m.label} color={m.color} icon="cloud-outline" />;
 }
 
 // MARK: Company modal
@@ -190,7 +227,7 @@ function CompanyModal({ visible, onClose }: { visible: boolean; onClose: () => v
 
 // MARK: Knowledge modal
 function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { settings, addKnowledge, removeKnowledge, agentConfig } = useStore();
+  const { settings, addKnowledge, addKnowledgeFile, removeKnowledge, openOriginal, agentConfig } = useStore();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [importError, setImportError] = useState('');
@@ -208,11 +245,19 @@ function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () =>
     setImporting(true);
     try {
       const doc = await pickAndExtract(agentConfig());
-      if (doc) addKnowledge(doc.title, doc.content);
+      if (doc) await addKnowledgeFile(doc);
     } catch (e) {
       setImportError(errorMessage(e));
     } finally {
       setImporting(false);
+    }
+  };
+
+  const viewOriginal = async (doc: KnowledgeDoc) => {
+    try {
+      await Linking.openURL(await openOriginal(doc));
+    } catch (e) {
+      setImportError(errorMessage(e));
     }
   };
 
@@ -238,15 +283,25 @@ function KnowledgeModal({ visible, onClose }: { visible: boolean; onClose: () =>
       </Field>
       {settings.knowledge.length > 0 ? (
         <Field label="Saved">
-          {settings.knowledge.map((doc) => (
-            <View key={doc.id} style={styles.docRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14.5, fontWeight: '600', color: C.text }}>{doc.title}</Text>
-                <Text style={{ fontSize: 12, color: C.textDim }} numberOfLines={2}>{doc.content.slice(0, 120)}</Text>
+          {settings.knowledge.map((doc) => {
+            const meta = [doc.fileName, doc.addedBy ? `added by ${doc.addedBy}` : null].filter(Boolean).join(' · ');
+            return (
+              <View key={doc.id} style={styles.docRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14.5, fontWeight: '600', color: C.text }}>{doc.title}</Text>
+                  <Text style={{ fontSize: 12, color: C.textDim }} numberOfLines={2}>{doc.content.slice(0, 120)}</Text>
+                  {meta ? <Text style={{ fontSize: 11, color: C.textFaint, marginTop: 3 }}>{meta}</Text> : null}
+                  {doc.filePath ? (
+                    <Pressable onPress={() => viewOriginal(doc)} hitSlop={4} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                      <Ionicons name="open-outline" size={13} color={C.indigo} />
+                      <Text style={{ fontSize: 12.5, color: C.indigo, fontWeight: '700' }}>Open original</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+                <Pressable onPress={() => removeKnowledge(doc.id)} hitSlop={6}><Ionicons name="trash" size={18} color={C.negative} /></Pressable>
               </View>
-              <Pressable onPress={() => removeKnowledge(doc.id)} hitSlop={6}><Ionicons name="trash" size={18} color={C.negative} /></Pressable>
-            </View>
-          ))}
+            );
+          })}
         </Field>
       ) : null}
     </ModalShell>

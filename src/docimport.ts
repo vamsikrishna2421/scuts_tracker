@@ -11,6 +11,8 @@ const IMG_EXT = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'heic', 'heif', 'bmp', 'ti
 export interface ImportedDoc {
   title: string;
   content: string;
+  /** The original picked file, so it can be mirrored to cloud storage for every device. */
+  original?: { localUri: string; fileName: string; mimeType: string };
 }
 
 /** Opens the file picker and returns extracted text from any supported document, or null if cancelled. */
@@ -24,6 +26,7 @@ export async function pickAndExtract(cfg: AgentConfig | null): Promise<ImportedD
   const ext = name.toLowerCase().split('.').pop() || '';
   const mime = (file.mimeType || '').toLowerCase();
   const title = name.replace(/\.[^.]+$/, '');
+  const original = { localUri: file.uri, fileName: name, mimeType: file.mimeType || guessMime(ext) };
 
   let content = '';
 
@@ -52,7 +55,18 @@ export async function pickAndExtract(cfg: AgentConfig | null): Promise<ImportedD
 
   content = content.trim();
   if (!content) throw new Error('No readable text was found in that file.');
-  return { title, content };
+  return { title, content, original };
+}
+
+/** Best-effort MIME type from a file extension, for files the picker didn't classify. */
+function guessMime(ext: string): string {
+  const map: Record<string, string> = {
+    pdf: 'application/pdf', txt: 'text/plain', md: 'text/markdown', markdown: 'text/markdown',
+    csv: 'text/csv', json: 'application/json', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', heif: 'image/heif',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
+  return map[ext] || 'application/octet-stream';
 }
 
 /** Word .docx is a zip of XML — unzip in pure JS and strip the tags. */

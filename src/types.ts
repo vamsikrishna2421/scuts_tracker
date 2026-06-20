@@ -53,6 +53,7 @@ export interface Partner {
   tags: string[];
   notes: string;
   createdAt: string;
+  addedBy?: string;
   lastContactAt?: string;
   nextFollowUpAt?: string;
   latestSentiment?: SentimentAnalysis;
@@ -73,6 +74,7 @@ export interface Interaction {
   sentiment?: SentimentAnalysis;
   processingState: ProcessingState;
   errorMessage?: string;
+  addedBy?: string;
 }
 
 export interface Reminder {
@@ -87,6 +89,7 @@ export interface Reminder {
   isDone: boolean;
   isAuto: boolean;
   createdAt: string;
+  addedBy?: string;
 }
 
 export interface ChatMessage {
@@ -97,7 +100,17 @@ export interface ChatMessage {
 }
 
 export interface Founder { id: string; name: string; role: string; }
-export interface KnowledgeDoc { id: string; title: string; content: string; createdAt: string; }
+export interface KnowledgeDoc {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  addedBy?: string;
+  /** Original uploaded file, mirrored to Supabase Storage so every device can open it. */
+  fileName?: string;
+  filePath?: string;
+  mimeType?: string;
+}
 
 export interface CompanyProfile {
   name: string;
