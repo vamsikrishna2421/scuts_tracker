@@ -15,7 +15,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "Scuts Tracker uses the microphone so you can dictate updates about salon owners.",
-        "NSSpeechRecognitionUsageDescription": "Scuts Tracker turns your voice into private on-device text."
+        "NSSpeechRecognitionUsageDescription": "Scuts Tracker turns your voice into private on-device text.",
+        "NSPhotoLibraryUsageDescription": "Scuts Tracker does not access your photo library for any feature; iOS requires this notice because a bundled system component references the photo APIs."
       }
     },
     "android": {
