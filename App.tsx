@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as Updates from 'expo-updates';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavProvider, TabKey, useNav } from './src/nav';
@@ -15,10 +15,15 @@ import Partners from './src/screens/Partners';
 import PartnerDetail from './src/screens/PartnerDetail';
 import Settings from './src/screens/Settings';
 import { StoreProvider, useStore } from './src/store';
-import { C } from './src/theme';
+import { C, shadow } from './src/theme';
 
-/** On launch, silently check for an OTA (JS) update; if there is one, download it and reload. */
+/**
+ * On launch, silently check for an OTA (JS) update and download it in the background —
+ * never blocking the UI. When one is ready, surface a banner so the user restarts on their terms.
+ * (A downloaded update also applies automatically on the next natural app launch.)
+ */
 function useOTAUpdates() {
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     if (__DEV__ || !Updates.isEnabled) return;
     (async () => {
@@ -26,26 +31,49 @@ function useOTAUpdates() {
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
           await Updates.fetchUpdateAsync();
-          await Updates.reloadAsync();
+          setReady(true);
         }
       } catch {
         // Offline or update server unreachable — keep running the current bundle.
       }
     })();
   }, []);
+  return { ready, restart: () => { void Updates.reloadAsync(); } };
 }
 
 export default function App() {
-  useOTAUpdates();
+  const ota = useOTAUpdates();
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <StoreProvider>
         <NavProvider>
           <Root />
+          {ota.ready ? <UpdateBanner onRestart={ota.restart} /> : null}
         </NavProvider>
       </StoreProvider>
     </SafeAreaProvider>
+  );
+}
+
+function UpdateBanner({ onRestart }: { onRestart: () => void }) {
+  const insets = useSafeAreaInsets();
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <View style={[styles.banner, { top: insets.top + 8 }]}>
+      <Ionicons name="sparkles" size={18} color={C.white} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.bannerTitle}>Update ready</Text>
+        <Text style={styles.bannerSub}>A new version has been downloaded.</Text>
+      </View>
+      <Pressable onPress={onRestart} style={styles.bannerBtn} hitSlop={6}>
+        <Text style={styles.bannerBtnText}>Restart</Text>
+      </Pressable>
+      <Pressable onPress={() => setDismissed(true)} hitSlop={8}>
+        <Ionicons name="close" size={18} color={C.white} />
+      </Pressable>
+    </View>
   );
 }
 
@@ -118,4 +146,22 @@ const styles = StyleSheet.create({
   },
   tabItem: { flex: 1, alignItems: 'center', gap: 2 },
   tabLabel: { fontSize: 10.5, fontWeight: '600' },
+  banner: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: C.indigo,
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    zIndex: 1000,
+    ...shadow,
+  },
+  bannerTitle: { color: C.white, fontWeight: '800', fontSize: 14 },
+  bannerSub: { color: C.white, opacity: 0.85, fontSize: 12, marginTop: 1 },
+  bannerBtn: { backgroundColor: C.white, borderRadius: 9, paddingHorizontal: 14, paddingVertical: 8 },
+  bannerBtnText: { color: C.indigo, fontWeight: '800', fontSize: 13 },
 });
